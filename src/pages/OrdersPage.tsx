@@ -70,6 +70,8 @@ export default function OrdersPage() {
         return "bg-yellow-100 text-yellow-800";
       case "ACCEPTED":
         return "bg-green-100 text-green-800";
+      case "OUT_FOR_DELIVERY":
+        return "bg-purple-100 text-purple-800";
       case "DELIVERED":
         return "bg-blue-100 text-blue-800";
       case "CANCELLED":
@@ -198,14 +200,23 @@ export default function OrdersPage() {
                 </>
               )}
 
-              {order.status === "ACCEPTED" && (
-                <button
-                  onClick={() => updateStatus(order.id, "DELIVERED")}
-                  className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg"
-                >
-                  Entregar
-                </button>
-              )}
+  {order.status === "ACCEPTED" && (
+  <button
+    onClick={() => updateStatus(order.id, "OUT_FOR_DELIVERY")}
+    className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg"
+  >
+    Saiu para entrega
+  </button>
+)}
+
+            {order.status === "OUT_FOR_DELIVERY" && (
+              <button
+                onClick={() => updateStatus(order.id, "DELIVERED")}
+                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg"
+              >
+                Entregue
+              </button>
+            )}
             </div>
           </div>
         ))}
