@@ -14,33 +14,40 @@ interface Product {
   imageUrl?: string;
   categoryId: number;
   categoryName: string;
+  stock: number;
 }
 
 export default function ProductsPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
 
+  // ================= CREATE PRODUCT =================
   const [newProduct, setNewProduct] = useState({
     name: "",
     description: "",
     price: "",
     categoryId: "",
+    stock: "",
   });
+  const [newImage, setNewImage] = useState<File | null>(null);
 
-  const [selectedImage, setSelectedImage] = useState<File | null>(null);
+  // ================= CREATE CATEGORY =================
   const [newCategory, setNewCategory] = useState("");
 
-  // =============================
-  // FETCH DATA
-  // =============================
+  // ================= EDIT =================
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [editedProduct, setEditedProduct] = useState<Product | null>(null);
+  const [editedImage, setEditedImage] = useState<File | null>(null);
+
+  // ================= FETCH =================
   async function fetchProducts() {
-    const response = await api.get("/products");
-    setProducts(response.data);
+    const res = await api.get("/products");
+    setProducts(res.data);
   }
 
   async function fetchCategories() {
-    const response = await api.get("/categories");
-    setCategories(response.data);
+    const res = await api.get("/categories");
+    setCategories(res.data);
   }
 
   useEffect(() => {
@@ -48,89 +55,95 @@ export default function ProductsPage() {
     fetchCategories();
   }, []);
 
-  // =============================
-  // CREATE PRODUCT
-  // =============================
+  // ================= CREATE PRODUCT =================
   async function handleCreateProduct() {
-    try {
-      const formData = new FormData();
+    const formData = new FormData();
+    formData.append("name", newProduct.name);
+    formData.append("description", newProduct.description);
+    formData.append("price", newProduct.price);
+    formData.append("categoryId", newProduct.categoryId);
+    formData.append("stock", newProduct.stock);
 
-      formData.append("name", newProduct.name);
-      formData.append("description", newProduct.description);
-      formData.append("price", newProduct.price);
-      formData.append("categoryId", newProduct.categoryId);
+    if (newImage) formData.append("image", newImage);
 
-      if (selectedImage) {
-        formData.append("image", selectedImage);
-      }
+    await api.post("/products", formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
 
-      await api.post("/products", formData, {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
-      });
-
-      setNewProduct({
-        name: "",
-        description: "",
-        price: "",
-        categoryId: "",
-      });
-
-      setSelectedImage(null);
-
-      fetchProducts();
-    } catch (error) {
-      console.error(error);
-      alert("Erro ao criar produto");
-    }
-  }
-
-  // =============================
-  // CREATE CATEGORY
-  // =============================
-  async function handleCreateCategory() {
-    try {
-      await api.post("/categories", {
-        name: newCategory,
-      });
-
-      setNewCategory("");
-      fetchCategories();
-    } catch (error) {
-      console.error(error);
-      alert("Erro ao criar categoria");
-    }
-  }
-
-  // =============================
-  // DELETE PRODUCT
-  // =============================
-  async function handleDeleteProduct(id: number) {
-    if (!confirm("Deseja realmente excluir este produto?")) return;
-
-    await api.delete(`/products/${id}`);
+    setNewProduct({
+      name: "",
+      description: "",
+      price: "",
+      categoryId: "",
+      stock: "",
+    });
+    setNewImage(null);
     fetchProducts();
   }
 
-  // =============================
-  // DELETE CATEGORY
-  // =============================
+  // ================= CREATE CATEGORY =================
+  async function handleCreateCategory() {
+    if (!newCategory) return;
+
+    await api.post("/categories", { name: newCategory });
+    setNewCategory("");
+    fetchCategories();
+  }
+
+  // ================= DELETE CATEGORY =================
   async function handleDeleteCategory(id: number) {
-    if (!confirm("Deseja realmente excluir esta categoria?")) return;
+    if (!confirm("Excluir categoria?")) return;
 
     await api.delete(`/categories/${id}`);
     fetchCategories();
   }
 
-  return (
-    <div className="p-8">
-      <h1 className="text-3xl font-bold mb-8">Gerenciar Produtos</h1>
+  // ================= EDIT =================
+  function startEdit(product: Product) {
+    setEditingId(product.id);
+    setEditedProduct({ ...product });
+  }
 
-      {/* ============================= */}
-      {/* NOVO PRODUTO */}
-      {/* ============================= */}
-      <div className="bg-white p-6 rounded-xl shadow mb-8">
+  function cancelEdit() {
+    setEditingId(null);
+    setEditedProduct(null);
+    setEditedImage(null);
+  }
+
+  async function saveEdit() {
+    if (!editedProduct) return;
+
+    const formData = new FormData();
+    formData.append("name", editedProduct.name);
+    formData.append("description", editedProduct.description);
+    formData.append("price", String(editedProduct.price));
+    formData.append("categoryId", String(editedProduct.categoryId));
+    formData.append("stock", String(editedProduct.stock));
+
+    if (editedImage) formData.append("image", editedImage);
+
+    await api.put(`/products/${editedProduct.id}`, formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+
+    cancelEdit();
+    fetchProducts();
+  }
+
+  // ================= DELETE PRODUCT =================
+  async function handleDelete(id: number) {
+    if (!confirm("Excluir produto?")) return;
+
+    await api.delete(`/products/${id}`);
+    fetchProducts();
+  }
+
+  return (
+    <div className="p-8 space-y-8">
+      <h1 className="text-3xl font-bold">Gerenciar Produtos</h1>
+
+      {/* ================= NOVO PRODUTO ================= */}
+      <div className="bg-white p-6 rounded-xl shadow">
         <h2 className="text-xl font-semibold mb-4">Novo Produto</h2>
 
         <div className="grid grid-cols-2 gap-4">
@@ -154,6 +167,16 @@ export default function ProductsPage() {
           />
 
           <input
+            type="number"
+            placeholder="Estoque"
+            className="border p-2 rounded"
+            value={newProduct.stock}
+            onChange={(e) =>
+              setNewProduct({ ...newProduct, stock: e.target.value })
+            }
+          />
+
+          <textarea
             placeholder="Descrição"
             className="border p-2 rounded col-span-2"
             value={newProduct.description}
@@ -180,11 +203,9 @@ export default function ProductsPage() {
           <input
             type="file"
             className="border p-2 rounded col-span-2"
-            onChange={(e) => {
-              if (e.target.files) {
-                setSelectedImage(e.target.files[0]);
-              }
-            }}
+            onChange={(e) =>
+              e.target.files && setNewImage(e.target.files[0])
+            }
           />
 
           <button
@@ -196,10 +217,8 @@ export default function ProductsPage() {
         </div>
       </div>
 
-      {/* ============================= */}
-      {/* NOVA CATEGORIA */}
-      {/* ============================= */}
-      <div className="bg-white p-6 rounded-xl shadow mb-8">
+      {/* ================= NOVA CATEGORIA ================= */}
+      <div className="bg-white p-6 rounded-xl shadow">
         <h2 className="text-xl font-semibold mb-4">Nova Categoria</h2>
 
         <div className="flex gap-4">
@@ -233,52 +252,175 @@ export default function ProductsPage() {
         </div>
       </div>
 
-      {/* ============================= */}
-      {/* LISTA DE PRODUTOS */}
-      {/* ============================= */}
+      {/* ================= LISTA PRODUTOS ================= */}
       <div className="bg-white p-6 rounded-xl shadow">
-        <h2 className="text-xl font-semibold mb-4">Lista de Produtos</h2>
-
         <table className="w-full text-left">
           <thead>
             <tr className="border-b">
               <th>Imagem</th>
               <th>Nome</th>
               <th>Preço</th>
+              <th>Estoque</th>
+              <th>Descrição</th>
               <th>Categoria</th>
               <th>Ações</th>
             </tr>
           </thead>
 
           <tbody>
-            {products.map((product) => (
-              <tr key={product.id} className="border-b">
-                <td>
-                  {product.imageUrl && (
-                    <img
-                      src={product.imageUrl}
-                      alt={product.name}
-                      className="w-16 h-16 object-cover rounded"
-                    />
-                  )}
-                </td>
+            {products.map((product) => {
+              const isEditing = editingId === product.id;
 
-                <td>{product.name}</td>
+              return (
+                <tr key={product.id} className="border-b">
+                  <td>
+                    {isEditing ? (
+                      <input
+                        type="file"
+                        onChange={(e) =>
+                          e.target.files &&
+                          setEditedImage(e.target.files[0])
+                        }
+                      />
+                    ) : (
+                      product.imageUrl && (
+                        <img
+                          src={product.imageUrl}
+                          className="w-16 h-16 rounded"
+                        />
+                      )
+                    )}
+                  </td>
 
-                <td>R$ {product.price.toFixed(2)}</td>
+                  <td>
+                    {isEditing ? (
+                      <input
+                        className="border p-1 rounded"
+                        value={editedProduct?.name || ""}
+                        onChange={(e) =>
+                          setEditedProduct({
+                            ...editedProduct!,
+                            name: e.target.value,
+                          })
+                        }
+                      />
+                    ) : (
+                      product.name
+                    )}
+                  </td>
 
-                <td>{product.categoryName}</td>
+                  <td>
+                    {isEditing ? (
+                      <input
+                        type="number"
+                        className="border p-1 rounded w-24"
+                        value={editedProduct?.price || ""}
+                        onChange={(e) =>
+                          setEditedProduct({
+                            ...editedProduct!,
+                            price: Number(e.target.value),
+                          })
+                        }
+                      />
+                    ) : (
+                      `R$ ${product.price.toFixed(2)}`
+                    )}
+                  </td>
 
-                <td>
-                  <button
-                    className="text-red-600"
-                    onClick={() => handleDeleteProduct(product.id)}
-                  >
-                    Excluir
-                  </button>
-                </td>
-              </tr>
-            ))}
+                  <td>
+                    {isEditing ? (
+                      <input
+                        type="number"
+                        className="border p-1 rounded w-20"
+                        value={editedProduct?.stock || ""}
+                        onChange={(e) =>
+                          setEditedProduct({
+                            ...editedProduct!,
+                            stock: Number(e.target.value),
+                          })
+                        }
+                      />
+                    ) : (
+                      product.stock
+                    )}
+                  </td>
+
+                  <td>
+                    {isEditing ? (
+                      <textarea
+                        className="border p-1 rounded"
+                        value={editedProduct?.description || ""}
+                        onChange={(e) =>
+                          setEditedProduct({
+                            ...editedProduct!,
+                            description: e.target.value,
+                          })
+                        }
+                      />
+                    ) : (
+                      product.description
+                    )}
+                  </td>
+
+                  <td>
+                    {isEditing ? (
+                      <select
+                        className="border p-1 rounded"
+                        value={editedProduct?.categoryId}
+                        onChange={(e) =>
+                          setEditedProduct({
+                            ...editedProduct!,
+                            categoryId: Number(e.target.value),
+                          })
+                        }
+                      >
+                        {categories.map((cat) => (
+                          <option key={cat.id} value={cat.id}>
+                            {cat.name}
+                          </option>
+                        ))}
+                      </select>
+                    ) : (
+                      product.categoryName
+                    )}
+                  </td>
+
+                  <td className="space-x-2">
+                    {isEditing ? (
+                      <>
+                        <button
+                          onClick={saveEdit}
+                          className="bg-green-600 text-white px-2 py-1 rounded"
+                        >
+                          Salvar
+                        </button>
+                        <button
+                          onClick={cancelEdit}
+                          className="bg-gray-400 text-white px-2 py-1 rounded"
+                        >
+                          Cancelar
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        <button
+                          onClick={() => startEdit(product)}
+                          className="text-blue-600"
+                        >
+                          Editar
+                        </button>
+                        <button
+                          onClick={() => handleDelete(product.id)}
+                          className="text-red-600"
+                        >
+                          Excluir
+                        </button>
+                      </>
+                    )}
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>

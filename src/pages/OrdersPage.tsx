@@ -18,6 +18,7 @@ interface Order {
   customerName: string;
   customerEmail: string;
   customerCpf: string;
+  customerPhone: string;
 
   street: string;
   number: string;
@@ -154,6 +155,7 @@ export default function OrdersPage() {
               <p><strong>Cliente:</strong> {order.customerName}</p>
               <p><strong>Email:</strong> {order.customerEmail}</p>
               <p><strong>CPF:</strong> {order.customerCpf}</p>
+              <p><strong>Telefone:</strong> {order.customerPhone}</p>
               <p>
                 <strong>Endereço:</strong>{" "}
                 {order.street}, {order.number} -{" "}
@@ -170,8 +172,10 @@ export default function OrdersPage() {
                 >
                   <span>
                     {item.productName} x{item.quantity}
+                     (R$ {item.price.toFixed(2)} cada)
                   </span>
                   <span>R$ {item.subtotal.toFixed(2)}</span>
+                  
                 </div>
               ))}
             </div>

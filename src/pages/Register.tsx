@@ -11,8 +11,8 @@ export default function Register() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-
   const [cpf, setCpf] = useState("");
+  const [phone, setPhone] = useState(""); // 👈 NOVO
 
   const [street, setStreet] = useState("");
   const [number, setNumber] = useState("");
@@ -21,11 +21,19 @@ export default function Register() {
 
   async function handleRegister() {
     try {
+
+      // ✅ Validação básica no front
+      if (!name || !email || !password || !cpf || !phone) {
+        alert("Preencha todos os campos obrigatórios");
+        return;
+      }
+
       await api.post("/auth/register", {
         name,
         email,
         password,
         cpf,
+        phone, // 👈 ENVIANDO TELEFONE
         address: {
           street,
           number,
@@ -36,6 +44,7 @@ export default function Register() {
 
       alert("Usuário criado com sucesso!");
       navigate("/");
+
     } catch (error: any) {
       console.log("ERRO COMPLETO:", error);
       console.log("STATUS:", error.response?.status);
@@ -76,6 +85,14 @@ export default function Register() {
           label="CPF"
           placeholder="Seu CPF"
           onChange={(e) => setCpf(e.target.value)}
+        />
+
+        {/* 👇 NOVO CAMPO TELEFONE */}
+        <FormInput
+          label="Telefone"
+          type="tel"
+          placeholder="(35) 99999-9999"
+          onChange={(e) => setPhone(e.target.value)}
         />
 
         <FormInput
