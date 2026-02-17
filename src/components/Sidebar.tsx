@@ -5,35 +5,34 @@ import api from "../services/api";
 export default function Sidebar() {
   const navigate = useNavigate();
 
-  const [storeOpen, setStoreOpen] = useState<boolean | null>(null);
+  const [storeOpen, setStoreOpen] = useState<boolean>(false);
   const [loading, setLoading] = useState(false);
 
   // =========================
-  // BUSCAR STATUS DA LOJA
+  // BUSCAR STATUS
   // =========================
   async function fetchStoreStatus() {
     try {
       const response = await api.get("/store/status");
 
-      // ⚠️ backend retorna boolean direto
-      setStoreOpen(response.data);
+      console.log("STATUS BACK:", response.data);
 
+      setStoreOpen(response.data.open); // 🔥 AQUI ESTAVA O ERRO
     } catch (error) {
-      console.error("Erro ao buscar status da loja", error);
+      console.error("Erro ao buscar status", error);
     }
   }
 
   // =========================
-  // ABRIR LOJA (PUT)
+  // ABRIR
   // =========================
   async function handleOpenStore() {
+    if (storeOpen) return;
+
     try {
       setLoading(true);
-
-      await api.put("/store/open"); // ✅ PUT
-
+      await api.put("/store/open");
       await fetchStoreStatus();
-
     } catch (error) {
       console.error(error);
       alert("Erro ao abrir loja");
@@ -43,16 +42,15 @@ export default function Sidebar() {
   }
 
   // =========================
-  // FECHAR LOJA (PUT)
+  // FECHAR
   // =========================
   async function handleCloseStore() {
+    if (!storeOpen) return;
+
     try {
       setLoading(true);
-
-      await api.put("/store/close"); // ✅ PUT
-
+      await api.put("/store/close");
       await fetchStoreStatus();
-
     } catch (error) {
       console.error(error);
       alert("Erro ao fechar loja");
@@ -68,7 +66,7 @@ export default function Sidebar() {
   return (
     <div className="w-64 bg-white shadow-lg p-6 flex flex-col justify-between">
       
-      {/* PARTE SUPERIOR */}
+      {/* MENU */}
       <div>
         <h1 className="text-xl font-bold text-green-600 mb-8">
           CA Delivery
@@ -95,20 +93,18 @@ export default function Sidebar() {
           STATUS DA LOJA
         </h2>
 
-        {storeOpen !== null && (
-          <div
-            className={`mb-3 font-bold ${
-              storeOpen ? "text-green-600" : "text-red-600"
-            }`}
-          >
-            {storeOpen ? "🟢 Aberta" : "🔴 Fechada"}
-          </div>
-        )}
+        <div
+          className={`mb-4 font-bold ${
+            storeOpen ? "text-green-600" : "text-red-600"
+          }`}
+        >
+          {storeOpen ? "🟢 Aberta" : "🔴 Fechada"}
+        </div>
 
         <button
           onClick={handleOpenStore}
-          disabled={loading || storeOpen === true}
-          className={`w-full mb-2 py-2 rounded text-white ${
+          disabled={loading || storeOpen}
+          className={`w-full mb-2 py-2 rounded text-white transition ${
             storeOpen
               ? "bg-gray-400"
               : "bg-green-600 hover:bg-green-700"
@@ -119,9 +115,9 @@ export default function Sidebar() {
 
         <button
           onClick={handleCloseStore}
-          disabled={loading || storeOpen === false}
-          className={`w-full py-2 rounded text-white ${
-            storeOpen === false
+          disabled={loading || !storeOpen}
+          className={`w-full py-2 rounded text-white transition ${
+            !storeOpen
               ? "bg-gray-400"
               : "bg-red-600 hover:bg-red-700"
           }`}
