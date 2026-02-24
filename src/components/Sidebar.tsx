@@ -17,7 +17,8 @@ export default function Sidebar() {
 
       console.log("STATUS BACK:", response.data);
 
-      setStoreOpen(response.data.open); // 🔥 AQUI ESTAVA O ERRO
+      // 🔥 backend retorna boolean
+      setStoreOpen(response.data);
     } catch (error) {
       console.error("Erro ao buscar status", error);
     }
@@ -31,7 +32,10 @@ export default function Sidebar() {
 
     try {
       setLoading(true);
-      await api.put("/store/open");
+
+      // 🔥 trocar PUT por POST
+      await api.post("/store/open");
+
       await fetchStoreStatus();
     } catch (error) {
       console.error(error);
@@ -49,7 +53,10 @@ export default function Sidebar() {
 
     try {
       setLoading(true);
-      await api.put("/store/close");
+
+      // 🔥 trocar PUT por POST
+      await api.post("/store/close");
+
       await fetchStoreStatus();
     } catch (error) {
       console.error(error);
