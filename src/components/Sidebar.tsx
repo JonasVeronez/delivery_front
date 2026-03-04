@@ -1,12 +1,16 @@
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useEffect, useState } from "react";
 import api from "../services/api";
 
 export default function Sidebar() {
   const navigate = useNavigate();
+  const location = useLocation();
 
   const [storeOpen, setStoreOpen] = useState<boolean>(false);
   const [loading, setLoading] = useState(false);
+
+  // ===== ACTIVE EXATO =====
+  const isExact = (path: string) => location.pathname === path;
 
   // =========================
   // BUSCAR STATUS
@@ -14,10 +18,6 @@ export default function Sidebar() {
   async function fetchStoreStatus() {
     try {
       const response = await api.get("/store/status");
-
-      console.log("STATUS BACK:", response.data);
-
-      // 🔥 backend retorna boolean
       setStoreOpen(response.data);
     } catch (error) {
       console.error("Erro ao buscar status", error);
@@ -25,17 +25,12 @@ export default function Sidebar() {
   }
 
   // =========================
-  // ABRIR
+  // ABRIR LOJA
   // =========================
   async function handleOpenStore() {
-    if (storeOpen) return;
-
     try {
       setLoading(true);
-
-      // 🔥 trocar PUT por POST
       await api.post("/store/open");
-
       await fetchStoreStatus();
     } catch (error) {
       console.error(error);
@@ -46,17 +41,18 @@ export default function Sidebar() {
   }
 
   // =========================
-  // FECHAR
+  // FECHAR LOJA (COM CONFIRMAÇÃO)
   // =========================
   async function handleCloseStore() {
-    if (!storeOpen) return;
+    const confirmClose = window.confirm(
+      "Tem certeza que deseja fechar a loja?"
+    );
+
+    if (!confirmClose) return;
 
     try {
       setLoading(true);
-
-      // 🔥 trocar PUT por POST
       await api.post("/store/close");
-
       await fetchStoreStatus();
     } catch (error) {
       console.error(error);
@@ -72,25 +68,46 @@ export default function Sidebar() {
 
   return (
     <div className="w-64 bg-white shadow-lg p-6 flex flex-col justify-between">
-      
       {/* MENU */}
       <div>
         <h1 className="text-xl font-bold text-green-600 mb-8">
           CA Delivery
         </h1>
 
+        {/* PEDIDOS */}
         <button
           onClick={() => navigate("/home/orders")}
-          className="mb-4 text-left hover:text-green-600 w-full"
+          className={`mb-3 w-full text-left px-3 py-2 rounded-lg transition ${
+            isExact("/home/orders")
+              ? "bg-green-600 text-white"
+              : "hover:bg-green-50 hover:text-green-600"
+          }`}
         >
           📦 Pedidos
         </button>
 
+        {/* PRODUTOS */}
         <button
           onClick={() => navigate("/home/products")}
-          className="text-left hover:text-green-600 w-full"
+          className={`mb-3 w-full text-left px-3 py-2 rounded-lg transition ${
+            isExact("/home/products")
+              ? "bg-green-600 text-white"
+              : "hover:bg-green-50 hover:text-green-600"
+          }`}
         >
           🛒 Produtos
+        </button>
+
+        {/* NOVO PRODUTO */}
+        <button
+          onClick={() => navigate("/home/products/create")}
+          className={`mb-3 w-full text-left px-3 py-2 rounded-lg transition ${
+            isExact("/home/products/create")
+              ? "bg-green-600 text-white"
+              : "hover:bg-green-50 hover:text-green-600"
+          }`}
+        >
+          ➕ Novo Produto
         </button>
       </div>
 
@@ -108,29 +125,24 @@ export default function Sidebar() {
           {storeOpen ? "🟢 Aberta" : "🔴 Fechada"}
         </div>
 
-        <button
-          onClick={handleOpenStore}
-          disabled={loading || storeOpen}
-          className={`w-full mb-2 py-2 rounded text-white transition ${
-            storeOpen
-              ? "bg-gray-400"
-              : "bg-green-600 hover:bg-green-700"
-          }`}
-        >
-          {loading ? "Processando..." : "Abrir Loja"}
-        </button>
-
-        <button
-          onClick={handleCloseStore}
-          disabled={loading || !storeOpen}
-          className={`w-full py-2 rounded text-white transition ${
-            !storeOpen
-              ? "bg-gray-400"
-              : "bg-red-600 hover:bg-red-700"
-          }`}
-        >
-          {loading ? "Processando..." : "Fechar Loja"}
-        </button>
+        {/* BOTÃO DINÂMICO (UM OU OUTRO) */}
+        {storeOpen ? (
+          <button
+            onClick={handleCloseStore}
+            disabled={loading}
+            className="w-full py-2 rounded text-white bg-red-600 hover:bg-red-700 transition"
+          >
+            {loading ? "Processando..." : "Fechar Loja"}
+          </button>
+        ) : (
+          <button
+            onClick={handleOpenStore}
+            disabled={loading}
+            className="w-full py-2 rounded text-white bg-green-600 hover:bg-green-700 transition"
+          >
+            {loading ? "Processando..." : "Abrir Loja"}
+          </button>
+        )}
       </div>
     </div>
   );
