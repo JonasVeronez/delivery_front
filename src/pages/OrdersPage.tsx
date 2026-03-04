@@ -99,7 +99,7 @@ export default function OrdersPage() {
       case "OUT_FOR_DELIVERY":
         return "bg-purple-100 text-purple-800";
       case "DELIVERED":
-        return "bg-blue-100 text-blue-800";
+        return "bg-green-100 text-green-800";
       case "CANCELLED":
         return "bg-red-100 text-red-800";
       default:
@@ -242,7 +242,7 @@ export default function OrdersPage() {
           {order.status === "OUT_FOR_DELIVERY" && (
             <button
               onClick={() => updateStatus(order.id, "DELIVERED")}
-              className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded"
+              className="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded"
             >
               Entregue
             </button>
@@ -293,15 +293,15 @@ export default function OrdersPage() {
         </div>
 
         {/* FINALIZADOS */}
-        <div className="bg-white border-2 border-blue-400 rounded-xl shadow-md flex flex-col overflow-hidden">
-          <div className="bg-blue-50 px-4 py-3 border-b border-blue-300 text-center">
-            <h2 className="text-lg font-bold text-blue-700">
-              🔵 Finalizados ({finishedOrders.length})
+        <div className="bg-white border-2 border-green-400 rounded-xl shadow-md flex flex-col overflow-hidden">
+          <div className="bg-green-50 px-4 py-3 border-b border-green-300 text-center">
+            <h2 className="text-lg font-bold text-green-700">
+              🟢 Finalizados ({finishedOrders.length})
             </h2>
           </div>
           <div className="overflow-y-auto flex-1 p-4">
             {finishedOrders.length === 0 && (
-              <p className="text-gray-500 text-center">Nenhum pedido finalizado.</p>
+              <p className="text-green-500 text-center">Nenhum pedido finalizado.</p>
             )}
             {finishedOrders.map(renderOrderCard)}
           </div>
