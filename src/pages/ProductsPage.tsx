@@ -1,10 +1,5 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import api from "../services/api";
-
-interface Category {
-  id: number;
-  name: string;
-}
 
 interface Product {
   id: number;
@@ -19,25 +14,14 @@ interface Product {
 
 export default function ProductsPage() {
   const [products, setProducts] = useState<Product[]>([]);
-  const [categories, setCategories] = useState<Category[]>([]);
-
-  // ================= CREATE PRODUCT =================
-  const [newProduct, setNewProduct] = useState({
-    name: "",
-    description: "",
-    price: "",
-    categoryId: "",
-    stock: "",
-  });
-  const [newImage, setNewImage] = useState<File | null>(null);
-
-  // ================= CREATE CATEGORY =================
-  const [newCategory, setNewCategory] = useState("");
-
-  // ================= EDIT =================
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editedProduct, setEditedProduct] = useState<Product | null>(null);
   const [editedImage, setEditedImage] = useState<File | null>(null);
+
+  // ================= FILTROS =================
+  const [filterName, setFilterName] = useState("");
+  const [filterStock, setFilterStock] = useState("");
+  const [filterCategory, setFilterCategory] = useState("");
 
   // ================= FETCH =================
   async function fetchProducts() {
@@ -45,58 +29,32 @@ export default function ProductsPage() {
     setProducts(res.data);
   }
 
-  async function fetchCategories() {
-    const res = await api.get("/categories");
-    setCategories(res.data);
-  }
-
   useEffect(() => {
     fetchProducts();
-    fetchCategories();
   }, []);
 
-  // ================= CREATE PRODUCT =================
-  async function handleCreateProduct() {
-    const formData = new FormData();
-    formData.append("name", newProduct.name);
-    formData.append("description", newProduct.description);
-    formData.append("price", newProduct.price);
-    formData.append("categoryId", newProduct.categoryId);
-    formData.append("stock", newProduct.stock);
+  // ================= FILTRAGEM =================
+  const filteredProducts = useMemo(() => {
+    return products.filter((product) => {
+      const matchName = product.name
+        .toLowerCase()
+        .includes(filterName.toLowerCase());
 
-    if (newImage) formData.append("image", newImage);
+      const matchStock = filterStock
+        ? product.stock >= Number(filterStock)
+        : true;
 
-    await api.post("/products", formData, {
-      headers: { "Content-Type": "multipart/form-data" },
+      const matchCategory = filterCategory
+        ? product.categoryName === filterCategory
+        : true;
+
+      return matchName && matchStock && matchCategory;
     });
+  }, [products, filterName, filterStock, filterCategory]);
 
-    setNewProduct({
-      name: "",
-      description: "",
-      price: "",
-      categoryId: "",
-      stock: "",
-    });
-    setNewImage(null);
-    fetchProducts();
-  }
-
-  // ================= CREATE CATEGORY =================
-  async function handleCreateCategory() {
-    if (!newCategory) return;
-
-    await api.post("/categories", { name: newCategory });
-    setNewCategory("");
-    fetchCategories();
-  }
-
-  // ================= DELETE CATEGORY =================
-  async function handleDeleteCategory(id: number) {
-    if (!confirm("Excluir categoria?")) return;
-
-    await api.delete(`/categories/${id}`);
-    fetchCategories();
-  }
+  const uniqueCategories = [
+    ...new Set(products.map((p) => p.categoryName)),
+  ];
 
   // ================= EDIT =================
   function startEdit(product: Product) {
@@ -130,7 +88,6 @@ export default function ProductsPage() {
     fetchProducts();
   }
 
-  // ================= DELETE PRODUCT =================
   async function handleDelete(id: number) {
     if (!confirm("Excluir produto?")) return;
 
@@ -139,290 +96,204 @@ export default function ProductsPage() {
   }
 
   return (
-    <div className="p-8 space-y-8">
-      <h1 className="text-3xl font-bold">Gerenciar Produtos</h1>
+    <div className="p-8 bg-gray-100 min-h-screen">
+      <div className="bg-white rounded-xl shadow-md border border-gray-300 overflow-hidden">
 
-      {/* ================= NOVO PRODUTO ================= */}
-      <div className="bg-white p-6 rounded-xl shadow">
-        <h2 className="text-xl font-semibold mb-4">Novo Produto</h2>
-
-        <div className="grid grid-cols-2 gap-4">
-          <input
-            placeholder="Nome"
-            className="border p-2 rounded"
-            value={newProduct.name}
-            onChange={(e) =>
-              setNewProduct({ ...newProduct, name: e.target.value })
-            }
-          />
-
-          <input
-            type="number"
-            placeholder="Preço"
-            className="border p-2 rounded"
-            value={newProduct.price}
-            onChange={(e) =>
-              setNewProduct({ ...newProduct, price: e.target.value })
-            }
-          />
-
-          <input
-            type="number"
-            placeholder="Estoque"
-            className="border p-2 rounded"
-            value={newProduct.stock}
-            onChange={(e) =>
-              setNewProduct({ ...newProduct, stock: e.target.value })
-            }
-          />
-
-          <textarea
-            placeholder="Descrição"
-            className="border p-2 rounded col-span-2"
-            value={newProduct.description}
-            onChange={(e) =>
-              setNewProduct({ ...newProduct, description: e.target.value })
-            }
-          />
-
-          <select
-            className="border p-2 rounded"
-            value={newProduct.categoryId}
-            onChange={(e) =>
-              setNewProduct({ ...newProduct, categoryId: e.target.value })
-            }
-          >
-            <option value="">Selecione a categoria</option>
-            {categories.map((cat) => (
-              <option key={cat.id} value={cat.id}>
-                {cat.name}
-              </option>
-            ))}
-          </select>
-
-          <input
-            type="file"
-            className="border p-2 rounded col-span-2"
-            onChange={(e) =>
-              e.target.files && setNewImage(e.target.files[0])
-            }
-          />
-
-          <button
-            onClick={handleCreateProduct}
-            className="bg-green-600 text-white px-4 py-2 rounded col-span-2"
-          >
-            Criar Produto
-          </button>
-        </div>
-      </div>
-
-      {/* ================= NOVA CATEGORIA ================= */}
-      <div className="bg-white p-6 rounded-xl shadow">
-        <h2 className="text-xl font-semibold mb-4">Nova Categoria</h2>
-
-        <div className="flex gap-4">
-          <input
-            placeholder="Nome da categoria"
-            className="border p-2 rounded flex-1"
-            value={newCategory}
-            onChange={(e) => setNewCategory(e.target.value)}
-          />
-
-          <button
-            onClick={handleCreateCategory}
-            className="bg-blue-600 text-white px-4 py-2 rounded"
-          >
-            Criar
-          </button>
+        {/* HEADER */}
+        <div className="bg-gray-100 px-6 py-4 border-b-2 border-gray-300">
+          <h2 className="text-lg font-bold text-gray-800 text-center">
+            📦 Lista de Produtos
+          </h2>
         </div>
 
-        <div className="mt-4">
-          {categories.map((cat) => (
-            <div key={cat.id} className="flex justify-between border-b py-2">
-              <span>{cat.name}</span>
-              <button
-                onClick={() => handleDeleteCategory(cat.id)}
-                className="text-red-600"
-              >
-                Excluir
-              </button>
-            </div>
-          ))}
+        {/* FILTROS */}
+        <div className="p-6 grid grid-cols-3 gap-6 border-b border-gray-300 bg-gray-50">
+
+          <div className="flex flex-col">
+            <label className="text-sm font-semibold mb-1 text-gray-700">
+              🔎 Filtrar por Nome
+            </label>
+            <input
+              placeholder="Digite o nome..."
+              className="border p-2 rounded"
+              value={filterName}
+              onChange={(e) => setFilterName(e.target.value)}
+            />
+          </div>
+
+          <div className="flex flex-col">
+            <label className="text-sm font-semibold mb-1 text-gray-700">
+              📦 Estoque Mínimo
+            </label>
+            <input
+              type="number"
+              placeholder="Quantidade mínima"
+              className="border p-2 rounded"
+              value={filterStock}
+              onChange={(e) => setFilterStock(e.target.value)}
+            />
+          </div>
+
+          <div className="flex flex-col">
+            <label className="text-sm font-semibold mb-1 text-gray-700">
+              🗂 Categoria
+            </label>
+            <select
+              className="border p-2 rounded"
+              value={filterCategory}
+              onChange={(e) => setFilterCategory(e.target.value)}
+            >
+              <option value="">Todas categorias</option>
+              {uniqueCategories.map((cat) => (
+                <option key={cat} value={cat}>
+                  {cat}
+                </option>
+              ))}
+            </select>
+          </div>
+
         </div>
-      </div>
 
-      {/* ================= LISTA PRODUTOS ================= */}
-      <div className="bg-white p-6 rounded-xl shadow">
-        <table className="w-full text-left">
-          <thead>
-            <tr className="border-b">
-              <th>Imagem</th>
-              <th>Nome</th>
-              <th>Preço</th>
-              <th>Estoque</th>
-              <th>Descrição</th>
-              <th>Categoria</th>
-              <th>Ações</th>
-            </tr>
-          </thead>
+        {/* TABELA */}
+        <div className="overflow-x-auto">
+          <table className="w-full border-collapse border border-gray-300">
 
-          <tbody>
-            {products.map((product) => {
-              const isEditing = editingId === product.id;
+            <thead className="bg-gray-200 text-gray-700 text-sm uppercase">
+              <tr>
+                <th className="p-3 border border-gray-300">Imagem</th>
+                <th className="p-3 border border-gray-300">Nome</th>
+                <th className="p-3 border border-gray-300">Preço</th>
+                <th className="p-3 border border-gray-300">Estoque</th>
+                <th className="p-3 border border-gray-300">Categoria</th>
+                <th className="p-3 border border-gray-300">Ações</th>
+              </tr>
+            </thead>
 
-              return (
-                <tr key={product.id} className="border-b">
-                  <td>
-                    {isEditing ? (
-                      <input
-                        type="file"
-                        onChange={(e) =>
-                          e.target.files &&
-                          setEditedImage(e.target.files[0])
-                        }
-                      />
-                    ) : (
-                      product.imageUrl && (
-                        <img
-                          src={product.imageUrl}
-                          className="w-16 h-16 rounded"
+            <tbody>
+              {filteredProducts.map((product) => {
+                const isEditing = editingId === product.id;
+
+                return (
+                  <tr key={product.id} className="hover:bg-gray-50">
+
+                    <td className="p-3 border border-gray-300">
+                      {isEditing ? (
+                        <input
+                          type="file"
+                          onChange={(e) =>
+                            e.target.files && setEditedImage(e.target.files[0])
+                          }
                         />
-                      )
-                    )}
-                  </td>
+                      ) : (
+                        product.imageUrl && (
+                          <div className="w-16 h-16 flex items-center justify-center bg-white border rounded">
+                            <img
+                              src={product.imageUrl}
+                              className="max-w-full max-h-full object-contain"
+                            />
+                          </div>
+                        )
+                      )}
+                    </td>
 
-                  <td>
-                    {isEditing ? (
-                      <input
-                        className="border p-1 rounded"
-                        value={editedProduct?.name || ""}
-                        onChange={(e) =>
-                          setEditedProduct({
-                            ...editedProduct!,
-                            name: e.target.value,
-                          })
-                        }
-                      />
-                    ) : (
-                      product.name
-                    )}
-                  </td>
+                    <td className="p-3 border border-gray-300">
+                      {isEditing ? (
+                        <input
+                          className="border p-1 rounded w-full"
+                          value={editedProduct?.name || ""}
+                          onChange={(e) =>
+                            setEditedProduct({
+                              ...editedProduct!,
+                              name: e.target.value,
+                            })
+                          }
+                        />
+                      ) : (
+                        product.name
+                      )}
+                    </td>
 
-                  <td>
-                    {isEditing ? (
-                      <input
-                        type="number"
-                        className="border p-1 rounded w-24"
-                        value={editedProduct?.price || ""}
-                        onChange={(e) =>
-                          setEditedProduct({
-                            ...editedProduct!,
-                            price: Number(e.target.value),
-                          })
-                        }
-                      />
-                    ) : (
-                      `R$ ${product.price.toFixed(2)}`
-                    )}
-                  </td>
+                    <td className="p-3 border border-gray-300">
+                      {isEditing ? (
+                        <input
+                          type="number"
+                          className="border p-1 rounded w-full"
+                          value={editedProduct?.price || ""}
+                          onChange={(e) =>
+                            setEditedProduct({
+                              ...editedProduct!,
+                              price: Number(e.target.value),
+                            })
+                          }
+                        />
+                      ) : (
+                        <>R$ {product.price.toFixed(2)}</>
+                      )}
+                    </td>
 
-                  <td>
-                    {isEditing ? (
-                      <input
-                        type="number"
-                        className="border p-1 rounded w-20"
-                        value={editedProduct?.stock || ""}
-                        onChange={(e) =>
-                          setEditedProduct({
-                            ...editedProduct!,
-                            stock: Number(e.target.value),
-                          })
-                        }
-                      />
-                    ) : (
-                      product.stock
-                    )}
-                  </td>
+                    <td className="p-3 border border-gray-300">
+                      {isEditing ? (
+                        <input
+                          type="number"
+                          className="border p-1 rounded w-full"
+                          value={editedProduct?.stock || ""}
+                          onChange={(e) =>
+                            setEditedProduct({
+                              ...editedProduct!,
+                              stock: Number(e.target.value),
+                            })
+                          }
+                        />
+                      ) : (
+                        product.stock
+                      )}
+                    </td>
 
-                  <td>
-                    {isEditing ? (
-                      <textarea
-                        className="border p-1 rounded"
-                        value={editedProduct?.description || ""}
-                        onChange={(e) =>
-                          setEditedProduct({
-                            ...editedProduct!,
-                            description: e.target.value,
-                          })
-                        }
-                      />
-                    ) : (
-                      product.description
-                    )}
-                  </td>
+                    <td className="p-3 border border-gray-300">
+                      {product.categoryName}
+                    </td>
 
-                  <td>
-                    {isEditing ? (
-                      <select
-                        className="border p-1 rounded"
-                        value={editedProduct?.categoryId}
-                        onChange={(e) =>
-                          setEditedProduct({
-                            ...editedProduct!,
-                            categoryId: Number(e.target.value),
-                          })
-                        }
-                      >
-                        {categories.map((cat) => (
-                          <option key={cat.id} value={cat.id}>
-                            {cat.name}
-                          </option>
-                        ))}
-                      </select>
-                    ) : (
-                      product.categoryName
-                    )}
-                  </td>
+                    <td className="p-3 border border-gray-300 space-x-3">
+                      {isEditing ? (
+                        <>
+                          <button
+                            onClick={saveEdit}
+                            className="text-green-600 font-semibold hover:underline"
+                          >
+                            Salvar
+                          </button>
+                          <button
+                            onClick={cancelEdit}
+                            className="text-gray-600 font-semibold hover:underline"
+                          >
+                            Cancelar
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                          <button
+                            onClick={() => startEdit(product)}
+                            className="text-blue-600 font-semibold hover:underline"
+                          >
+                            Editar
+                          </button>
+                          <button
+                            onClick={() => handleDelete(product.id)}
+                            className="text-red-600 font-semibold hover:underline"
+                          >
+                            Excluir
+                          </button>
+                        </>
+                      )}
+                    </td>
 
-                  <td className="space-x-2">
-                    {isEditing ? (
-                      <>
-                        <button
-                          onClick={saveEdit}
-                          className="bg-green-600 text-white px-2 py-1 rounded"
-                        >
-                          Salvar
-                        </button>
-                        <button
-                          onClick={cancelEdit}
-                          className="bg-gray-400 text-white px-2 py-1 rounded"
-                        >
-                          Cancelar
-                        </button>
-                      </>
-                    ) : (
-                      <>
-                        <button
-                          onClick={() => startEdit(product)}
-                          className="text-blue-600"
-                        >
-                          Editar
-                        </button>
-                        <button
-                          onClick={() => handleDelete(product.id)}
-                          className="text-red-600"
-                        >
-                          Excluir
-                        </button>
-                      </>
-                    )}
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
+                  </tr>
+                );
+              })}
+            </tbody>
+
+          </table>
+        </div>
       </div>
     </div>
   );
