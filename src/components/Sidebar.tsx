@@ -9,12 +9,10 @@ export default function Sidebar() {
   const [storeOpen, setStoreOpen] = useState<boolean>(false);
   const [loading, setLoading] = useState(false);
 
-  // ===== ACTIVE EXATO =====
+  const [openProducts, setOpenProducts] = useState(true);
+
   const isExact = (path: string) => location.pathname === path;
 
-  // =========================
-  // BUSCAR STATUS
-  // =========================
   async function fetchStoreStatus() {
     try {
       const response = await api.get("/store/status");
@@ -24,25 +22,18 @@ export default function Sidebar() {
     }
   }
 
-  // =========================
-  // ABRIR LOJA
-  // =========================
   async function handleOpenStore() {
     try {
       setLoading(true);
       await api.post("/store/open");
       await fetchStoreStatus();
     } catch (error) {
-      console.error(error);
       alert("Erro ao abrir loja");
     } finally {
       setLoading(false);
     }
   }
 
-  // =========================
-  // FECHAR LOJA (COM CONFIRMAÇÃO)
-  // =========================
   async function handleCloseStore() {
     const confirmClose = window.confirm(
       "Tem certeza que deseja fechar a loja?"
@@ -55,7 +46,6 @@ export default function Sidebar() {
       await api.post("/store/close");
       await fetchStoreStatus();
     } catch (error) {
-      console.error(error);
       alert("Erro ao fechar loja");
     } finally {
       setLoading(false);
@@ -66,84 +56,144 @@ export default function Sidebar() {
     fetchStoreStatus();
   }, []);
 
+  // 🎨 CORES DINÂMICAS
+  const bgColor = storeOpen ? "bg-green-50" : "bg-red-50";
+  const hoverColor = storeOpen
+    ? "hover:bg-green-100 hover:text-green-700"
+    : "hover:bg-red-100 hover:text-red-700";
+  const activeColor = storeOpen
+    ? "bg-green-600 text-white"
+    : "bg-red-600 text-white";
+  const titleColor = storeOpen ? "text-green-700" : "text-red-700";
+  const borderColor = storeOpen ? "border-green-200" : "border-red-200";
+
   return (
-    <div className="w-64 bg-white shadow-lg p-6 flex flex-col justify-between">
-      {/* MENU */}
-      <div>
-        <h1 className="text-xl font-bold text-green-600 mb-8">
-          CA Delivery
-        </h1>
+    <>
+      {/* 🔥 ANIMAÇÃO PULSANTE */}
+      <style>
+        {`
+          @keyframes pulseSoft {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.06); }
+          }
 
-        {/* PEDIDOS */}
-        <button
-          onClick={() => navigate("/home/orders")}
-          className={`mb-3 w-full text-left px-3 py-2 rounded-lg transition ${
-            isExact("/home/orders")
-              ? "bg-green-600 text-white"
-              : "hover:bg-green-50 hover:text-green-600"
-          }`}
-        >
-          📦 Pedidos
-        </button>
+          .pulse-soft {
+            animation: pulseSoft 1.5s infinite ease-in-out;
+          }
+        `}
+      </style>
 
-        {/* PRODUTOS */}
-        <button
-          onClick={() => navigate("/home/products")}
-          className={`mb-3 w-full text-left px-3 py-2 rounded-lg transition ${
-            isExact("/home/products")
-              ? "bg-green-600 text-white"
-              : "hover:bg-green-50 hover:text-green-600"
-          }`}
-        >
-          🛒 Produtos
-        </button>
+      <div className={`w-64 ${bgColor} shadow-lg p-6 flex flex-col justify-between`}>
 
-        {/* NOVO PRODUTO */}
-        <button
-          onClick={() => navigate("/home/products/create")}
-          className={`mb-3 w-full text-left px-3 py-2 rounded-lg transition ${
-            isExact("/home/products/create")
-              ? "bg-green-600 text-white"
-              : "hover:bg-green-50 hover:text-green-600"
-          }`}
-        >
-          ➕ Novo Produto
-        </button>
-      </div>
+        {/* MENU */}
+        <div>
+          <h1 className={`text-xl font-bold mb-8 ${titleColor}`}>
+            CA Delivery
+          </h1>
 
-      {/* CONTROLE DA LOJA */}
-      <div className="mt-10 pt-6 border-t">
-        <h2 className="text-sm font-semibold mb-2 text-gray-500">
-          STATUS DA LOJA
-        </h2>
+          {/* PEDIDOS */}
+          <button
+            onClick={() => navigate("/home/orders")}
+            className={`mb-3 w-full text-left px-3 py-2 rounded-lg transition ${
+              isExact("/home/orders") ? activeColor : hoverColor
+            }`}
+          >
+            📦 Pedidos
+          </button>
 
-        <div
-          className={`mb-4 font-bold ${
-            storeOpen ? "text-green-600" : "text-red-600"
-          }`}
-        >
-          {storeOpen ? "🟢 Aberta" : "🔴 Fechada"}
+          {/* PRODUTOS */}
+          <div className="mb-3">
+            <button
+              onClick={() => setOpenProducts(!openProducts)}
+              className={`w-full text-left px-3 py-2 rounded-lg transition flex justify-between items-center ${
+                location.pathname.includes("/home/products")
+                  ? activeColor
+                  : hoverColor
+              }`}
+            >
+              <span>🛒 Produtos</span>
+              <span>{openProducts ? "▲" : "▼"}</span>
+            </button>
+
+            {openProducts && (
+              <div className="ml-4 mt-2 flex flex-col gap-2">
+
+                <button
+                  onClick={() => navigate("/home/products")}
+                  className={`text-left px-3 py-2 rounded transition ${
+                    isExact("/home/products")
+                      ? storeOpen
+                        ? "bg-green-200 text-green-900"
+                        : "bg-red-200 text-red-900"
+                      : hoverColor
+                  }`}
+                >
+                  📋 Lista de Produtos
+                </button>
+
+                <button
+                  onClick={() => navigate("/home/products/create")}
+                  className={`text-left px-3 py-2 rounded transition ${
+                    isExact("/home/products/create")
+                      ? storeOpen
+                        ? "bg-green-200 text-green-900"
+                        : "bg-red-200 text-red-900"
+                      : hoverColor
+                  }`}
+                >
+                  ➕ Novo Produto
+                </button>
+
+              </div>
+            )}
+          </div>
+
+          {/* HISTÓRICO */}
+          <button
+            onClick={() => navigate("/home/history")}
+            className={`mb-3 w-full text-left px-3 py-2 rounded-lg transition ${
+              isExact("/home/history") ? activeColor : hoverColor
+            }`}
+          >
+            📊 Histórico
+          </button>
         </div>
 
-        {/* BOTÃO DINÂMICO (UM OU OUTRO) */}
-        {storeOpen ? (
-          <button
-            onClick={handleCloseStore}
-            disabled={loading}
-            className="w-full py-2 rounded text-white bg-red-600 hover:bg-red-700 transition"
+        {/* CONTROLE DA LOJA */}
+        <div className={`mt-10 pt-6 border-t ${borderColor}`}>
+          <h2 className={`text-sm font-semibold mb-2 ${titleColor}`}>
+            STATUS DA LOJA
+          </h2>
+
+          <div
+            className={`mb-4 font-bold ${
+              storeOpen ? "text-green-700" : "text-red-600"
+            }`}
           >
-            {loading ? "Processando..." : "Fechar Loja"}
-          </button>
-        ) : (
-          <button
-            onClick={handleOpenStore}
-            disabled={loading}
-            className="w-full py-2 rounded text-white bg-green-600 hover:bg-green-700 transition"
-          >
-            {loading ? "Processando..." : "Abrir Loja"}
-          </button>
-        )}
+            {storeOpen ? "🟢 Aberta" : "🔴 Fechada"}
+          </div>
+
+          {storeOpen ? (
+            <button
+              onClick={handleCloseStore}
+              disabled={loading}
+              className="w-full py-2 rounded text-white bg-red-600 hover:bg-red-700 transition"
+            >
+              {loading ? "Processando..." : "Fechar Loja"}
+            </button>
+          ) : (
+            <button
+              onClick={handleOpenStore}
+              disabled={loading}
+              className={`w-full py-2 rounded text-white bg-green-600 hover:bg-green-700 transition ${
+                !storeOpen ? "pulse-soft" : ""
+              }`}
+            >
+              {loading ? "Processando..." : "Abrir Loja"}
+            </button>
+          )}
+        </div>
       </div>
-    </div>
+    </>
   );
 }

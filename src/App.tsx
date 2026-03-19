@@ -6,6 +6,7 @@ import Home from "./pages/Home";
 import OrdersPage from "./pages/OrdersPage";
 import ProductsPage from "./pages/ProductsPage";
 import CreateProductPage from "./pages/CreateProductPage";
+import HistoryPage from "./pages/HistoryPage"; // 👈 NOVO
 
 function App() {
   return (
@@ -18,9 +19,13 @@ function App() {
 
         {/* Layout principal */}
         <Route path="/home" element={<Home />}>
-        <Route path="/home/products/create" element={<CreateProductPage />} />
+
           <Route path="orders" element={<OrdersPage />} />
           <Route path="products" element={<ProductsPage />} />
+          <Route path="products/create" element={<CreateProductPage />} />
+          
+          {/* 👇 NOVA ROTA */}
+          <Route path="history" element={<HistoryPage />} />
 
         </Route>
 

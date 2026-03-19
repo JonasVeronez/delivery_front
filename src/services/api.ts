@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const api = axios.create({
-  baseURL: "https://delivery-api-vuzo.onrender.com",
+  baseURL: "https://delivery-api-production-f20f.up.railway.app",
 });
 
 api.interceptors.request.use((config) => {

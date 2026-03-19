@@ -33,23 +33,25 @@ export default function ProductsPage() {
     fetchProducts();
   }, []);
 
-  // ================= FILTRAGEM =================
+  // ================= FILTRAGEM + ORDENAÇÃO =================
   const filteredProducts = useMemo(() => {
-    return products.filter((product) => {
-      const matchName = product.name
-        .toLowerCase()
-        .includes(filterName.toLowerCase());
+    return products
+      .filter((product) => {
+        const matchName = product.name
+          .toLowerCase()
+          .includes(filterName.toLowerCase());
 
-      const matchStock = filterStock
-        ? product.stock >= Number(filterStock)
-        : true;
+        const matchStock = filterStock
+          ? product.stock >= Number(filterStock)
+          : true;
 
-      const matchCategory = filterCategory
-        ? product.categoryName === filterCategory
-        : true;
+        const matchCategory = filterCategory
+          ? product.categoryName === filterCategory
+          : true;
 
-      return matchName && matchStock && matchCategory;
-    });
+        return matchName && matchStock && matchCategory;
+      })
+      .sort((a, b) => a.stock - b.stock); // 👈 ORDENA POR ESTOQUE (MENOR PRIMEIRO)
   }, [products, filterName, filterStock, filterCategory]);
 
   const uniqueCategories = [
@@ -174,7 +176,12 @@ export default function ProductsPage() {
                 const isEditing = editingId === product.id;
 
                 return (
-                  <tr key={product.id} className="hover:bg-gray-50">
+                  <tr
+                    key={product.id}
+                    className={`hover:bg-gray-50 ${
+                      product.stock === 0 ? "bg-red-100" : ""
+                    }`}
+                  >
 
                     <td className="p-3 border border-gray-300">
                       {isEditing ? (
@@ -231,7 +238,7 @@ export default function ProductsPage() {
                       )}
                     </td>
 
-                    <td className="p-3 border border-gray-300">
+                    <td className="p-3 border border-gray-300 font-bold">
                       {isEditing ? (
                         <input
                           type="number"
