@@ -39,16 +39,13 @@ export default function Home() {
       <div className="flex-1 flex flex-col">
 
         {/* 🔥 HEADER */}
-        <div className="bg-white shadow px-6 py-4 flex justify-between items-center border-b">
+        <div className="bg-green-50 shadow px-6 py-4 flex justify-between items-center border-b">
 
           <div>
             <h2 className="text-lg font-semibold text-gray-700">
-              Bem-vindo 👋
+              Bem-vindo 👋 ,{user ? user.name : "Carregando..."}
             </h2>
 
-            <p className="text-sm text-gray-500">
-              {user ? user.name : "Carregando..."}
-            </p>
           </div>
 
           <div className="flex items-center gap-4">

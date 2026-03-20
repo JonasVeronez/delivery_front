@@ -155,7 +155,7 @@ export default function Sidebar() {
               isExact("/home/history") ? activeColor : hoverColor
             }`}
           >
-            📊 Histórico
+            📊 Histórico de Pedidos
           </button>
         </div>
 
