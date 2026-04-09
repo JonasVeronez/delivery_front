@@ -23,7 +23,11 @@ export default function Home() {
   }
 
   useEffect(() => {
-    fetchUser();
+    const token = localStorage.getItem("token");
+
+    if (token) {
+      fetchUser();
+    }
   }, []);
 
   function handleLogout() {
@@ -43,7 +47,7 @@ export default function Home() {
 
           <div>
             <h2 className="text-lg font-semibold text-gray-700">
-              Bem-vindo 👋 ,{user ? user.name : "Carregando..."}
+              Bem-vindo 👋    {user ? user.name : "Carregando..."}
             </h2>
 
           </div>
