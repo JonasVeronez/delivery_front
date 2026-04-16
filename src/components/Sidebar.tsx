@@ -84,7 +84,7 @@ export default function Sidebar() {
       </style>
 
       <div className={`w-64 ${bgColor} shadow-lg p-6 flex flex-col justify-between`}>
-
+        
         {/* MENU */}
         <div>
           <h1 className={`text-xl font-bold mb-8 ${titleColor}`}>
@@ -156,6 +156,16 @@ export default function Sidebar() {
             }`}
           >
             📊 Histórico de Pedidos
+          </button>
+
+          {/* USUÁRIOS */}
+          <button
+            onClick={() => navigate("/home/users")}
+            className={`mb-3 w-full text-left px-3 py-2 rounded-lg transition ${
+              isExact("/home/users") ? activeColor : hoverColor
+            }`}
+          >
+            👥 Usuários
           </button>
         </div>
 

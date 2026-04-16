@@ -7,6 +7,7 @@ import OrdersPage from "./pages/OrdersPage";
 import ProductsPage from "./pages/ProductsPage";
 import CreateProductPage from "./pages/CreateProductPage";
 import HistoryPage from "./pages/HistoryPage"; // 👈 NOVO
+import UsersPage from "./pages/UsersPage";
 
 function App() {
   return (
@@ -26,7 +27,7 @@ function App() {
           
           {/* 👇 NOVA ROTA */}
           <Route path="history" element={<HistoryPage />} />
-
+          <Route path="/home/users" element={<UsersPage />} />
         </Route>
 
       </Routes>

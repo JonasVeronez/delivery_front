@@ -60,9 +60,7 @@ export default function ProductsPage() {
       .sort((a, b) => a.stock - b.stock);
   }, [products, filterName, filterStock, filterCategory]);
 
-  const uniqueCategories = [
-    ...new Set(products.map((p) => p.categoryName)),
-  ];
+  const uniqueCategories = [...new Set(products.map((p) => p.categoryName))];
 
   function startEdit(product: Product) {
     setEditingId(product.id);
@@ -86,14 +84,17 @@ export default function ProductsPage() {
       formData.append("categoryId", String(editedProduct.categoryId));
       formData.append("stock", String(editedProduct.stock));
 
-      if (editedImage) formData.append("image", editedImage);
+      if (editedImage) {
+        formData.append("image", editedImage);
+      }
 
       await api.put(`/products/${editedProduct.id}`, formData);
 
       alert("Produto atualizado!");
       cancelEdit();
       fetchProducts();
-    } catch {
+    } catch (e) {
+      console.error(e);
       alert("Erro ao salvar produto");
     }
   }
@@ -104,7 +105,7 @@ export default function ProductsPage() {
     try {
       await api.delete(`/products/${id}`);
       setProducts((prev) => prev.filter((p) => p.id !== id));
-    } catch (e: any) {
+    } catch (e) {
       alert("Erro ao deletar");
     }
   }
@@ -115,17 +116,16 @@ export default function ProductsPage() {
 
   return (
     <div className="h-screen flex flex-col bg-gray-100 p-0">
-
       <div className="bg-white rounded-xl shadow-md border flex flex-col h-full overflow-hidden">
 
-        {/* HEADER FIXO */}
+        {/* HEADER */}
         <div className="bg-gray-400 px-6 py-3 border-b shadow">
           <h2 className="text-lg font-bold text-center">
             📦 Lista de Produtos
           </h2>
         </div>
 
-        {/* FILTROS FIXOS */}
+        {/* FILTERS */}
         <div className="p-2 grid grid-cols-3 gap-3 border-b bg-gray-50">
           <input
             placeholder="🔎 Nome..."
@@ -147,17 +147,19 @@ export default function ProductsPage() {
             value={filterCategory}
             onChange={(e) => setFilterCategory(e.target.value)}
           >
-            <option value="">Todas</option>
+            <option value="">Todas categorias</option>
             {uniqueCategories.map((cat) => (
-              <option key={cat}>{cat}</option>
+              <option key={cat} value={cat}>
+                {cat}
+              </option>
             ))}
           </select>
         </div>
 
-        {/* TABELA COM SCROLL */}
+        {/* TABLE */}
         <div className="flex-1 overflow-y-auto">
-
           <table className="w-full border-collapse">
+
             <thead className="bg-gray-200 sticky top-0 z-10">
               <tr>
                 <th className="p-3 border">Imagem</th>
@@ -172,64 +174,159 @@ export default function ProductsPage() {
             <tbody>
               {filteredProducts.map((product) => {
                 const isEditing = editingId === product.id;
+                const lowStock = product.stock < 5;
 
                 return (
                   <tr
                     key={product.id}
-                    className={`hover:bg-gray-50 ${
-                      product.stock === 0
-                        ? "bg-red-200"
-                        : product.stock < 5
-                        ? "bg-red-100"
-                        : ""
+                    className={`transition-colors ${
+                      isEditing
+                        ? "bg-blue-50 border-l-4 border-blue-400"
+                        : lowStock
+                        ? "bg-red-50"
+                        : "hover:bg-gray-50"
                     }`}
                   >
+
+                    {/* IMAGE */}
                     <td className="p-3 border">
-                      <div className="w-16 h-16 flex items-center justify-center bg-white border rounded">
+                      <div className="flex flex-col gap-2">
                         <img
-                          src={product.imageUrl || "https://via.placeholder.com/100"}
-                          className="max-w-full max-h-full object-contain"
+                          src={
+                            product.imageUrl ||
+                            "https://via.placeholder.com/100"
+                          }
+                          className="w-16 h-16 object-contain rounded"
                         />
+
+                        {isEditing && (
+                          <input
+                            type="file"
+                            onChange={(e) =>
+                              setEditedImage(e.target.files?.[0] || null)
+                            }
+                          />
+                        )}
                       </div>
                     </td>
 
-                    <td className="p-3 border">{product.name}</td>
-
+                    {/* NAME */}
                     <td className="p-3 border">
-                      R$ {product.price.toFixed(2)}
+                      {isEditing ? (
+                        <input
+                          className="border p-1 w-full"
+                          value={editedProduct?.name || ""}
+                          onChange={(e) =>
+                            setEditedProduct((prev) =>
+                              prev
+                                ? { ...prev, name: e.target.value }
+                                : prev
+                            )
+                          }
+                        />
+                      ) : (
+                        product.name
+                      )}
                     </td>
 
-                    <td className="p-3 border font-bold">
-                      {product.stock}
+                    {/* PRICE */}
+                    <td className="p-3 border">
+                      {isEditing ? (
+                        <input
+                          type="number"
+                          className="border p-1 w-full"
+                          value={editedProduct?.price || 0}
+                          onChange={(e) =>
+                            setEditedProduct((prev) =>
+                              prev
+                                ? {
+                                    ...prev,
+                                    price: Number(e.target.value),
+                                  }
+                                : prev
+                            )
+                          }
+                        />
+                      ) : (
+                        `R$ ${product.price.toFixed(2)}`
+                      )}
                     </td>
 
+                    {/* STOCK */}
+                    <td className="p-3 border">
+                      <span className={lowStock ? "text-red-600 font-bold" : ""}>
+                        {isEditing ? (
+                          <input
+                            type="number"
+                            className="border p-1 w-full"
+                            value={editedProduct?.stock || 0}
+                            onChange={(e) =>
+                              setEditedProduct((prev) =>
+                                prev
+                                  ? {
+                                      ...prev,
+                                      stock: Number(e.target.value),
+                                    }
+                                  : prev
+                              )
+                            }
+                          />
+                        ) : (
+                          product.stock
+                        )}
+                      </span>
+                    </td>
+
+                    {/* CATEGORY */}
                     <td className="p-3 border">
                       {product.categoryName}
                     </td>
 
-                    <td className="p-3 border space-x-3">
-                      <button
-                        onClick={() => startEdit(product)}
-                        className="text-blue-600"
-                      >
-                        Editar
-                      </button>
+                    {/* ACTIONS */}
+                    <td className="p-3 border text-center">
+                      {isEditing ? (
+                        <div className="flex justify-center gap-3">
+                          <button
+                            onClick={saveEdit}
+                            className="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded-md text-sm font-semibold transition"
+                          >
+                            Salvar
+                          </button>
 
-                      <button
-                        onClick={() => handleDelete(product.id)}
-                        className="text-red-600"
-                      >
-                        Excluir
-                      </button>
+                          <button
+                            onClick={cancelEdit}
+                            className="bg-gray-200 hover:bg-gray-300 text-gray-700 px-3 py-1 rounded-md text-sm font-semibold transition"
+                          >
+                            Cancelar
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="flex justify-center gap-3">
+                          <button
+                            onClick={() => startEdit(product)}
+                            className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded-md text-sm font-semibold transition"
+                          >
+                            Editar
+                          </button>
+
+                          <button
+                            onClick={() => handleDelete(product.id)}
+                            className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded-md text-sm font-semibold transition"
+                          >
+                            Excluir
+                          </button>
+                        </div>
+                      )}
                     </td>
 
                   </tr>
                 );
               })}
             </tbody>
-          </table>
 
+          </table>
         </div>
+
       </div>
     </div>
   );

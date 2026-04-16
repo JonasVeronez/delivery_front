@@ -20,9 +20,22 @@ export default function CreateProductPage() {
 
   const [newCategory, setNewCategory] = useState("");
 
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [editedName, setEditedName] = useState("");
+
+  const [loading, setLoading] = useState(false);
+
   async function fetchCategories() {
-    const res = await api.get("/categories");
-    setCategories(res.data);
+    try {
+      setLoading(true);
+      const res = await api.get("/categories");
+      setCategories(res.data || []);
+    } catch (e) {
+      console.error(e);
+      alert("Erro ao carregar categorias");
+    } finally {
+      setLoading(false);
+    }
   }
 
   useEffect(() => {
@@ -30,169 +43,281 @@ export default function CreateProductPage() {
   }, []);
 
   async function handleCreateProduct() {
-    const formData = new FormData();
-    formData.append("name", product.name);
-    formData.append("description", product.description);
-    formData.append("price", product.price);
-    formData.append("categoryId", product.categoryId);
-    formData.append("stock", product.stock);
+    try {
+      const formData = new FormData();
+      formData.append("name", product.name);
+      formData.append("description", product.description);
+      formData.append("price", product.price);
+      formData.append("categoryId", product.categoryId);
+      formData.append("stock", product.stock);
 
-    if (image) formData.append("image", image);
+      if (image) formData.append("image", image);
 
-    await api.post("/products", formData, {
-      headers: { "Content-Type": "multipart/form-data" },
-    });
+      await api.post("/products", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
 
-    alert("Produto criado com sucesso!");
+      alert("Produto criado com sucesso!");
 
-    setProduct({
-      name: "",
-      description: "",
-      price: "",
-      categoryId: "",
-      stock: "",
-    });
-    setImage(null);
+      setProduct({
+        name: "",
+        description: "",
+        price: "",
+        categoryId: "",
+        stock: "",
+      });
+
+      setImage(null);
+    } catch (e) {
+      console.error(e);
+      alert("Erro ao criar produto");
+    }
   }
 
   async function handleCreateCategory() {
     if (!newCategory) return;
-    await api.post("/categories", { name: newCategory });
-    setNewCategory("");
-    fetchCategories();
+
+    try {
+      await api.post("/categories", { name: newCategory });
+      setNewCategory("");
+      fetchCategories();
+    } catch (e) {
+      console.error(e);
+      alert("Erro ao criar categoria");
+    }
+  }
+
+  function startEdit(cat: Category) {
+    setEditingId(cat.id);
+    setEditedName(cat.name);
+  }
+
+  function cancelEdit() {
+    setEditingId(null);
+    setEditedName("");
+  }
+
+  async function saveEdit(id: number) {
+    try {
+      await api.put(`/categories/${id}`, {
+        name: editedName,
+      });
+
+      cancelEdit();
+      fetchCategories();
+    } catch (e) {
+      console.error(e);
+      alert("Erro ao editar categoria");
+    }
   }
 
   async function handleDeleteCategory(id: number) {
     if (!confirm("Deseja realmente excluir esta categoria?")) return;
-    await api.delete(`/categories/${id}`);
-    fetchCategories();
+
+    try {
+      await api.delete(`/categories/${id}`);
+      fetchCategories();
+    } catch (e) {
+      console.error(e);
+      alert("Erro ao excluir categoria");
+    }
+  }
+
+  if (loading) {
+    return <div className="p-8 text-center">Carregando...</div>;
   }
 
   return (
-    <div className="px-8 pt-2 pb-8 bg-gray-100 min-h-screen space-y-8">
-      
-      {/* CARDS LADO A LADO */}
-      <div className="grid grid-cols-2 gap-8">
+    <div className="h-screen flex flex-col bg-gray-100 p-0">
 
-        {/* NOVO PRODUTO */}
-        <div className="bg-white rounded-xl shadow-md p-8">
-          <h2 className="text-xl font-bold mb-6 text-green-600">➕ Novo Produto</h2>
+      <div className="bg-white rounded-xl shadow-md border flex flex-col h-full overflow-hidden">
 
-          <div className="space-y-4">
-            <input
-              placeholder="Nome"
-              className="border p-2 rounded w-full"
-              value={product.name}
-              onChange={(e) => setProduct({ ...product, name: e.target.value })}
-            />
-
-            <textarea
-              placeholder="Descrição"
-              className="border p-2 rounded w-full"
-              value={product.description}
-              onChange={(e) =>
-                setProduct({ ...product, description: e.target.value })
-              }
-            />
-
-            <input
-              type="number"
-              placeholder="Preço"
-              className="border p-2 rounded w-full"
-              value={product.price}
-              onChange={(e) => setProduct({ ...product, price: e.target.value })}
-            />
-
-            <input
-              type="number"
-              placeholder="Estoque"
-              className="border p-2 rounded w-full"
-              value={product.stock}
-              onChange={(e) => setProduct({ ...product, stock: e.target.value })}
-            />
-
-            <select
-              className="border p-2 rounded w-full"
-              value={product.categoryId}
-              onChange={(e) =>
-                setProduct({ ...product, categoryId: e.target.value })
-              }
-            >
-              <option value="">Selecione a categoria</option>
-              {categories.map((cat) => (
-                <option key={cat.id} value={cat.id}>
-                  {cat.name}
-                </option>
-              ))}
-            </select>
-
-            <input
-              type="file"
-              className="border p-2 rounded w-full"
-              onChange={(e) =>
-                e.target.files && setImage(e.target.files[0])
-              }
-            />
-
-            <button
-              onClick={handleCreateProduct}
-              className="bg-green-600 text-white py-2 rounded w-full hover:bg-green-700 transition"
-            >
-              Criar Produto
-            </button>
-          </div>
+        <div className="bg-gray-400 px-6 py-3 border-b shadow">
+          <h2 className="text-lg font-bold text-center">
+            ➕ Criar Produto & 🗂 Categorias
+          </h2>
         </div>
 
-        {/* NOVA CATEGORIA */}
-        <div className="bg-white rounded-xl shadow-md p-8 flex flex-col">
-          <h2 className="text-xl font-bold mb-6 text-blue-600">🗂 Nova Categoria</h2>
+        <div className="flex flex-1 gap-6 p-4 overflow-hidden">
 
-          <div className="flex gap-4 mb-6">
-            <input
-              placeholder="Nome da categoria"
-              className="border p-2 rounded flex-1"
-              value={newCategory}
-              onChange={(e) => setNewCategory(e.target.value)}
-            />
-            <button
-              onClick={handleCreateCategory}
-              className="bg-blue-600 text-white px-4 rounded hover:bg-blue-700 transition"
-            >
-              Criar
-            </button>
-          </div>
+          {/* PRODUCT */}
+          <div className="w-1/2 bg-white rounded-xl border p-6 overflow-auto">
+            <h2 className="text-xl font-bold mb-6 text-green-600">
+              ➕ Novo Produto
+            </h2>
 
-          {/* TABELA MODERNA DE CATEGORIAS COM MARGEM ESCURA */}
-          <div className="overflow-x-auto border border-gray-600 rounded-lg">
-            <table className="w-full text-left border-collapse">
-              <thead className="bg-blue-50 text-blue-700 font-semibold">
-                <tr>
-                  <th className="p-3 border-b border-gray-600">ID</th>
-                  <th className="p-3 border-b border-gray-600">Categoria</th>
-                  <th className="p-3 border-b border-gray-600">Ações</th>
-                </tr>
-              </thead>
-              <tbody className="bg-white">
+            <div className="space-y-4">
+
+              <input className="border p-2 w-full rounded"
+                placeholder="Nome"
+                value={product.name}
+                onChange={(e) =>
+                  setProduct({ ...product, name: e.target.value })
+                }
+              />
+
+              <textarea className="border p-2 w-full rounded"
+                placeholder="Descrição"
+                value={product.description}
+                onChange={(e) =>
+                  setProduct({ ...product, description: e.target.value })
+                }
+              />
+
+              <input className="border p-2 w-full rounded"
+                placeholder="Preço"
+                type="number"
+                value={product.price}
+                onChange={(e) =>
+                  setProduct({ ...product, price: e.target.value })
+                }
+              />
+
+              <input className="border p-2 w-full rounded"
+                placeholder="Estoque"
+                type="number"
+                value={product.stock}
+                onChange={(e) =>
+                  setProduct({ ...product, stock: e.target.value })
+                }
+              />
+
+              <select className="border p-2 w-full rounded"
+                value={product.categoryId}
+                onChange={(e) =>
+                  setProduct({ ...product, categoryId: e.target.value })
+                }
+              >
+                <option value="">Selecione categoria</option>
                 {categories.map((cat) => (
-                  <tr key={cat.id} className="hover:bg-blue-50 transition">
-                    <td className="p-3 border-b border-gray-600">{cat.id}</td>
-                    <td className="p-3 border-b border-gray-600">{cat.name}</td>
-                    <td className="p-3 border-b border-gray-600 space-x-2">
-                      <button
-                        onClick={() => handleDeleteCategory(cat.id)}
-                        className="text-red-600 hover:text-red-800 font-medium"
-                      >
-                        Excluir
-                      </button>
-                    </td>
-                  </tr>
+                  <option key={cat.id} value={cat.id}>
+                    {cat.name}
+                  </option>
                 ))}
-              </tbody>
-            </table>
+              </select>
+
+              <input type="file"
+                className="border p-2 w-full rounded"
+                onChange={(e) =>
+                  e.target.files && setImage(e.target.files[0])
+                }
+              />
+
+              <button
+                onClick={handleCreateProduct}
+                className="bg-green-600 text-white p-2 w-full rounded font-semibold"
+              >
+                Criar Produto
+              </button>
+
+            </div>
+          </div>
+
+          {/* CATEGORY */}
+          <div className="w-1/2 bg-white rounded-xl border p-6 flex flex-col overflow-hidden">
+
+            <h2 className="text-xl font-bold mb-4 text-blue-600">
+              🗂 Categorias
+            </h2>
+
+            <div className="flex gap-2 mb-4">
+              <input
+                className="border p-2 flex-1 rounded"
+                value={newCategory}
+                onChange={(e) => setNewCategory(e.target.value)}
+                placeholder="Nova categoria"
+              />
+
+              <button
+                onClick={handleCreateCategory}
+                className="bg-blue-600 text-white px-4 rounded"
+              >
+                Criar
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto border rounded">
+
+              <table className="w-full">
+
+                <thead className="bg-gray-200 sticky top-0">
+                  <tr>
+                    <th className="p-2 border">ID</th>
+                    <th className="p-2 border">Nome</th>
+                    <th className="p-2 border">Ações</th>
+                  </tr>
+                </thead>
+
+                <tbody>
+                  {categories.map((cat) => {
+                    const isEditing = editingId === cat.id;
+
+                    return (
+                      <tr
+                        key={cat.id}
+                        className={isEditing ? "bg-blue-50" : "hover:bg-gray-50"}
+                      >
+                        <td className="p-2 border">{cat.id}</td>
+
+                        <td className="p-2 border">
+                          {isEditing ? (
+                            <input
+                              className="border p-1 w-full"
+                              value={editedName}
+                              onChange={(e) => setEditedName(e.target.value)}
+                            />
+                          ) : (
+                            cat.name
+                          )}
+                        </td>
+
+                        <td className="p-2 border text-center">
+                          {isEditing ? (
+                            <div className="flex gap-2 justify-center">
+                              <button
+                                onClick={() => saveEdit(cat.id)}
+                                className="bg-green-600 text-white px-2 py-1 rounded text-sm"
+                              >
+                                Salvar
+                              </button>
+
+                              <button
+                                onClick={cancelEdit}
+                                className="bg-gray-300 px-2 py-1 rounded text-sm"
+                              >
+                                Cancelar
+                              </button>
+                            </div>
+                          ) : (
+                            <div className="flex gap-2 justify-center">
+                              <button
+                                onClick={() => startEdit(cat)}
+                                className="bg-blue-600 text-white px-2 py-1 rounded text-sm"
+                              >
+                                Editar
+                              </button>
+
+                              <button
+                                onClick={() => handleDeleteCategory(cat.id)}
+                                className="bg-red-600 text-white px-2 py-1 rounded text-sm"
+                              >
+                                Excluir
+                              </button>
+                            </div>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+
+              </table>
+
+            </div>
+
           </div>
 
         </div>
-
       </div>
     </div>
   );
